@@ -1,0 +1,368 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>3.0.6</version>
+        <relativePath />
+    </parent>
+
+    <groupId>com.azureproblm.bug</groupId>
+    <artifactId>azure-blobstoreage-large-file-problem</artifactId>
+    <version>0.0.82-SNAPSHOT</version>
+    <packaging>pom</packaging>
+
+
+    <modules>
+        <module>downloader</module>
+        <module>fileserver</module>
+    </modules>
+
+
+    <properties>
+        <java.version>17</java.version>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <!-- auto version related -->
+        <service.version>0</service.version>
+        <version.update.enable>generate-sources</version.update.enable>
+        <version.phase>none</version.phase>
+        <service.name>-invalid-</service.name>
+        <maven.deploy.skip>false</maven.deploy.skip>
+
+        <assertj-core.version>3.24.2</assertj-core.version>
+        <bcpkix-jdk15on.version>1.70</bcpkix-jdk15on.version>
+        <bcprov-jdk15on.version>1.70</bcprov-jdk15on.version>
+        <commons-compress.version>1.22</commons-compress.version>
+        <commons-io.version>2.11.0</commons-io.version>
+        <datafaker.version>1.8.0</datafaker.version>
+        <dcm4che.version>5.22.6</dcm4che.version>
+        <jakarta.xml.bind-api.version>4.0.0</jakarta.xml.bind-api.version>
+        <jaxb-runtime.version>4.0.2</jaxb-runtime.version>
+        <jjwt-api.version>0.11.5</jjwt-api.version>
+        <junrar.version>7.5.4</junrar.version>
+        <libphonenumber.version>8.13.7</libphonenumber.version>
+        <logbook-spring-boot-starter.version>3.0.0-RC.2</logbook-spring-boot-starter.version>
+        <nimbus-jose-jwt.version>9.31</nimbus-jose-jwt.version>
+        <mssql-jdbc.version>12.2.0.jre11</mssql-jdbc.version>
+        <parallel-stream-support.version>2.0.0</parallel-stream-support.version>
+        <preliquibase-spring-boot-starter.version>1.3.0</preliquibase-spring-boot-starter.version>
+        <pdfbox.version>2.0.28</pdfbox.version>
+        <spring-cloud-azure.version>5.1.0</spring-cloud-azure.version>
+        <spring-cloud.version>2022.0.2</spring-cloud.version>
+        <spring-security-oauth2-authorization-server.version>1.0.2</spring-security-oauth2-authorization-server.version>
+        <springdoc-openapi-ui.version>1.7.0</springdoc-openapi-ui.version>
+
+        <!-- sonar analyse -->
+        <org.jacoco.agent.version>0.8.7</org.jacoco.agent.version>
+        <jacoco-maven-plugin.version>0.8.6</jacoco-maven-plugin.version>
+        <sonar.coverage.jacoco.xmlReportPaths>${project.build.directory}/site/jacoco/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
+        <jacoco.bin.reportfile>${project.build.directory}/jacoco.exec</jacoco.bin.reportfile>
+        <sonar-maven-plugin.version>3.8.0.2131</sonar-maven-plugin.version>
+        <sonar.java.coveragePlugin>jacoco</sonar.java.coveragePlugin>
+        <sonar.language>java</sonar.language>
+
+
+        <!-- The Docker-Build must have access to the internet to download additional tools like curl.
+On the local machine these values are "undefined" so you must have direct access to the internet, on the Jenkins these values are present -->
+        <!--suppress UnresolvedMavenProperty -->
+        <docker.buildArg.http_proxy>${env.http_proxy}</docker.buildArg.http_proxy>
+        <!--suppress UnresolvedMavenProperty -->
+        <docker.buildArg.https_proxy>${env.https_proxy}</docker.buildArg.https_proxy>
+        <!--suppress UnresolvedMavenProperty -->
+        <docker.buildArg.no_proxy>${env.no_proxy}</docker.buildArg.no_proxy>
+
+
+        <!-- Plugins-->
+        <typescript-generator-maven-plugin.version>3.2.1263</typescript-generator-maven-plugin.version>
+        <pedantic-pom-enforcers.version>2.1.0</pedantic-pom-enforcers.version>
+        <versions-maven-plugin.version>2.15.0</versions-maven-plugin.version>
+        <docker-maven-plugin.version>0.42.1</docker-maven-plugin.version>
+        <maven-antrun-plugin.version>3.1.0</maven-antrun-plugin.version>
+        <maven-resources-plugin.version>3.3.1</maven-resources-plugin.version>
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>com.azure.spring</groupId>
+                <artifactId>spring-cloud-azure-dependencies</artifactId>
+                <version>${spring-cloud-azure.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework.cloud</groupId>
+                <artifactId>spring-cloud-dependencies</artifactId>
+                <version>${spring-cloud.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>com.azure.spring</groupId>
+                <artifactId>spring-cloud-azure-starter-storage</artifactId>
+                <version>${spring-cloud-azure.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.azure.spring</groupId>
+                <artifactId>spring-cloud-azure-starter-storage-blob</artifactId>
+                <version>${spring-cloud-azure.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.github.ferstl</groupId>
+                <artifactId>parallel-stream-support</artifactId>
+                <version>${parallel-stream-support.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.github.junrar</groupId>
+                <artifactId>junrar</artifactId>
+                <version>${junrar.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.googlecode.libphonenumber</groupId>
+                <artifactId>libphonenumber</artifactId>
+                <version>${libphonenumber.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.microsoft.sqlserver</groupId>
+                <artifactId>mssql-jdbc</artifactId>
+                <version>${mssql-jdbc.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.nimbusds</groupId>
+                <artifactId>nimbus-jose-jwt</artifactId>
+                <version>${nimbus-jose-jwt.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>commons-io</groupId>
+                <artifactId>commons-io</artifactId>
+                <version>${commons-io.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.jsonwebtoken</groupId>
+                <artifactId>jjwt-api</artifactId>
+                <version>${jjwt-api.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>jakarta.xml.bind</groupId>
+                <artifactId>jakarta.xml.bind-api</artifactId>
+                <version>${jakarta.xml.bind-api.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>net.datafaker</groupId>
+                <artifactId>datafaker</artifactId>
+                <version>${datafaker.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>net.lbruun.springboot</groupId>
+                <artifactId>preliquibase-spring-boot-starter</artifactId>
+                <version>${preliquibase-spring-boot-starter.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-compress</artifactId>
+                <version>${commons-compress.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.pdfbox</groupId>
+                <artifactId>pdfbox</artifactId>
+                <version>${pdfbox.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.bouncycastle</groupId>
+                <artifactId>bcpkix-jdk15on</artifactId>
+                <version>${bcpkix-jdk15on.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.bouncycastle</groupId>
+                <artifactId>bcprov-jdk15on</artifactId>
+                <version>${bcprov-jdk15on.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.dcm4che</groupId>
+                <artifactId>dcm4che-core</artifactId>
+                <version>5.22.6</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.slf4j</groupId>
+                        <artifactId>slf4j-api</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.slf4j</groupId>
+                        <artifactId>slf4j-log4j12</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>org.dcm4che</groupId>
+                <artifactId>dcm4che-imageio</artifactId>
+                <version>${dcm4che.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.slf4j</groupId>
+                        <artifactId>slf4j-api</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.slf4j</groupId>
+                        <artifactId>slf4j-log4j12</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>org.dcm4che</groupId>
+                <artifactId>dcm4che-json</artifactId>
+                <version>${dcm4che.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.slf4j</groupId>
+                        <artifactId>slf4j-api</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.slf4j</groupId>
+                        <artifactId>slf4j-log4j12</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>org.glassfish.jaxb</groupId>
+                <artifactId>jaxb-runtime</artifactId>
+                <version>${jaxb-runtime.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.springdoc</groupId>
+                <artifactId>springdoc-openapi-ui</artifactId>
+                <version>${springdoc-openapi-ui.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.slf4j</groupId>
+                        <artifactId>slf4j-api</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>com.fasterxml.jackson.core</groupId>
+                        <artifactId>jackson-core</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework.security</groupId>
+                <artifactId>spring-security-oauth2-authorization-server</artifactId>
+                <version>${spring-security-oauth2-authorization-server.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.zalando</groupId>
+                <artifactId>logbook-spring-boot-starter</artifactId>
+                <version>${logbook-spring-boot-starter.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.jsonwebtoken</groupId>
+                <artifactId>jjwt-impl</artifactId>
+                <version>${jjwt-api.version}</version>
+                <scope>runtime</scope>
+            </dependency>
+            <dependency>
+                <groupId>io.jsonwebtoken</groupId>
+                <artifactId>jjwt-jackson</artifactId>
+                <version>${jjwt-api.version}</version>
+                <scope>runtime</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.assertj</groupId>
+                <artifactId>assertj-core</artifactId>
+                <version>${assertj-core.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.jacoco</groupId>
+                <artifactId>org.jacoco.agent</artifactId>
+                <version>${org.jacoco.agent.version}</version>
+                <classifier>runtime</classifier>
+                <scope>test</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>versions-maven-plugin</artifactId>
+                <version>${versions-maven-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <phase>${version.phase}</phase>
+                        <goals>
+                            <goal>set</goal>
+                        </goals>
+                        <id>update-version</id>
+                        <configuration>
+                            <generateBackupPoms>false</generateBackupPoms>
+                            <artifactId>${service.name}*</artifactId>
+                            <newVersion>${service.version}</newVersion>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>17</source>
+                    <target>17</target>
+                </configuration>
+            </plugin>
+        </plugins>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>cz.habarta.typescript-generator</groupId>
+                    <artifactId>typescript-generator-maven-plugin</artifactId>
+                    <version>${typescript-generator-maven-plugin.version}</version>
+                    <executions>
+                        <execution>
+                            <id>generate</id>
+                            <goals>
+                                <goal>generate</goal>
+                            </goals>
+                            <phase>process-classes</phase>
+                        </execution>
+                    </executions>
+                    <configuration>
+                        <mapEnum>asEnum</mapEnum>
+                        <jsonLibrary>jackson2</jsonLibrary>
+                        <nonConstEnums>true</nonConstEnums>
+                        <outputFileType>implementationFile</outputFileType>
+                        <outputKind>module</outputKind>
+                    </configuration>
+                </plugin>
+
+                <plugin>
+                    <groupId>io.fabric8</groupId>
+                    <artifactId>docker-maven-plugin</artifactId>
+                    <version>${docker-maven-plugin.version}</version>
+                </plugin>
+
+
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-antrun-plugin</artifactId>
+                    <version>${maven-antrun-plugin.version}</version>
+                </plugin>
+
+
+                <plugin>
+                    <artifactId>maven-resources-plugin</artifactId>
+                    <version>${maven-resources-plugin.version}</version>
+                </plugin>
+
+            </plugins>
+        </pluginManagement>
+
+    </build>
+
+
+</project>

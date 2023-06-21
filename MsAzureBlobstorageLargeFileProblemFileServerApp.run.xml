@@ -1,0 +1,17 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="MsAzureBlobstorageLargeFileProblemFileServerApp" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" nameIsGenerated="true">
+    <module name="fileserver" />
+    <option name="SHORTEN_COMMAND_LINE" value="ARGS_FILE" />
+    <option name="SPRING_BOOT_MAIN_CLASS" value="com.azureproblem.bug.application.MsAzureBlobstorageLargeFileProblemFileServerApp" />
+    <option name="VM_PARAMETERS" value="-Xmx5G -XX:+CrashOnOutOfMemoryError" />
+    <extension name="coverage">
+      <pattern>
+        <option name="PATTERN" value="com.azureproblem.bug.application.*" />
+        <option name="ENABLED" value="true" />
+      </pattern>
+    </extension>
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

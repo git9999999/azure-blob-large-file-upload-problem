@@ -1,0 +1,15 @@
+version: "4"
+services:
+
+  ms-azurite:
+    image: mcr.microsoft.com/azure-storage/azurite
+    container_name: "azurite"
+    hostname: azurite
+    restart: always
+    ports:
+      - 10000:10000
+      - 10001:10001
+      - 10002:10002
+    command: azurite -l /workspace -d /workspace/debug.log --blobPort 10000 --blobHost 0.0.0.0 --queuePort 10001 --queueHost 0.0.0.0 --tablePort 10002 --tableHost 0.0.0.0
+    volumes:
+      - c:/develop/azurite:/workspace
