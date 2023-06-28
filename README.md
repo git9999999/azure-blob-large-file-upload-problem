@@ -46,3 +46,9 @@ please checkout the log of the app. You see that it only this msg and the app ha
 It is strange that the app can write (stream) any file to the file system. But we can not stream
 something bigger than 250MB to the blobstorage, although we use a Output stream the same as in
 the File case. 
+
+## Generate Testdata on the client side and store it to the BlobStorage
+
+This calls generate test data on the client side and writes it directly to the Blob Storage. Not 
+Data is transmitted via REST.
+`localhost:8544/trigger-generation-of-random-data-to-blobstore/260`

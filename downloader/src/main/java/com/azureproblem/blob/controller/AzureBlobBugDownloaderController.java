@@ -7,14 +7,17 @@ import com.azure.storage.blob.BlobServiceClient;
 import com.azure.storage.blob.BlobServiceClientBuilder;
 import com.azure.storage.blob.models.ParallelTransferOptions;
 import com.azure.storage.common.implementation.Constants;
+import java.io.ByteArrayInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.SecureRandom;
 import java.time.Duration;
 import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.buffer.DataBufferUtils;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
@@ -99,6 +102,29 @@ public class AzureBlobBugDownloaderController {
         }
 
         log.info("!!!!!!!!!!!!!!!!!!!!!!!!!!!!   end download of {}", targetFile);
+    }
+
+    @GetMapping(path = "/trigger-generation-of-random-data-to-blobstore/{fileSizeInMb}")
+    public void triggerGenerationOfRandomDataToBlobStore(@PathVariable int fileSizeInMb) {
+        log.info("triggerDownloadToFile");
+        try {
+            byte[] bytes = new byte[fileSizeInMb * Constants.MB];
+            SecureRandom.getInstanceStrong().nextBytes(bytes);
+            try (ByteArrayInputStream inputStream = new ByteArrayInputStream(bytes);) {
+                var destination = "TestDownloadToAzureBlobStorage" + System.currentTimeMillis() + ".pdf";
+
+                var blobClientTarget = this.containerClient.getBlobClient(destination);
+
+                try (var outputStream = blobClientTarget.getBlockBlobClient().getBlobOutputStream(this.parallelTransferOptions, null, null, null, null)) {
+                    outputStream.write(inputStream.readAllBytes());
+                } catch (IOException e) {
+                    throw new IllegalStateException(e);
+                }
+                log.info("!!!!!!!!!!!!!!!!!!!!!!!!!!!!   end download of {}", destination);
+            }
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
     }
 
 
