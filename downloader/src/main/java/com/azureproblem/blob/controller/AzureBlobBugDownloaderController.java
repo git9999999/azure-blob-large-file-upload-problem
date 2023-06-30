@@ -1,27 +1,14 @@
 package com.azureproblem.blob.controller;
 
-import static org.apache.commons.lang3.ObjectUtils.isEmpty;
-
-import com.azure.storage.blob.BlobContainerClient;
-import com.azure.storage.blob.BlobServiceClient;
+import com.azure.storage.blob.BlobContainerAsyncClient;
+import com.azure.storage.blob.BlobServiceAsyncClient;
 import com.azure.storage.blob.BlobServiceClientBuilder;
 import com.azure.storage.blob.models.ParallelTransferOptions;
 import com.azure.storage.common.implementation.Constants;
-import java.io.ByteArrayInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.security.SecureRandom;
-import java.time.Duration;
-import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.buffer.DataBufferUtils;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
-import org.springframework.util.StopWatch;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -29,21 +16,33 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.reactive.function.BodyExtractors;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClient.Builder;
+import reactor.core.publisher.Mono;
 import reactor.netty.http.client.HttpClient;
+
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.ByteBuffer;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.Duration;
+import java.util.UUID;
+
+import static org.apache.commons.lang3.ObjectUtils.isEmpty;
 
 @RestController
 @RequestMapping()
 @Slf4j
 public class AzureBlobBugDownloaderController {
 
-    public static final int  MS_COMMON_BUFFER_SIZE_INT  = 40 * Constants.MB;
+    public static final int MS_COMMON_BUFFER_SIZE_INT = 40 * Constants.MB;
     public static final long MS_COMMON_BUFFER_SIZE_LONG = 40 * Constants.MB;
 
     public static final String BLOB_CONTAINER_NAME = "azure-blob-storage-bug";
 
-    private final BlobContainerClient containerClient;
+    private final BlobContainerAsyncClient containerAsyncClient;
 
-    private final BlobServiceClient blobServiceClient;
+    private final BlobServiceAsyncClient blobServiceAsyncClient;
 
     private final WebClient webClient;
 
@@ -51,8 +50,8 @@ public class AzureBlobBugDownloaderController {
 
 
     public AzureBlobBugDownloaderController(BlobServiceClientBuilder blobServiceClientBuilder) {
-        this.blobServiceClient = blobServiceClientBuilder.buildClient();
-        this.containerClient = this.blobServiceClient.getBlobContainerClient(BLOB_CONTAINER_NAME);
+        this.blobServiceAsyncClient = blobServiceClientBuilder.buildAsyncClient();
+        this.containerAsyncClient = this.blobServiceAsyncClient.getBlobContainerAsyncClient(BLOB_CONTAINER_NAME);
         log.debug("technicalAppIp '{}' technicalAppPort '{}'", "8545", "8545");
         this.webClient = msCommonWebClientBuilder().baseUrl(createUrl("client", "localhost", "8545")).build();
 
@@ -66,10 +65,17 @@ public class AzureBlobBugDownloaderController {
     }
 
     public void createBlobContainer() {
-        if (!this.blobServiceClient.getBlobContainerClient(BLOB_CONTAINER_NAME).exists()) {
-            log.info("blob container '{}' doesn't exist yet - creating it", BLOB_CONTAINER_NAME);
-            this.blobServiceClient.getBlobContainerClient(BLOB_CONTAINER_NAME).create();
-        }
+        this.blobServiceAsyncClient.getBlobContainerAsyncClient(BLOB_CONTAINER_NAME)
+            .exists()
+            .flatMap(exists -> {
+                if (!exists) {
+                    log.info("blob container '{}' doesn't exist yet - creating it", BLOB_CONTAINER_NAME);
+                    return this.blobServiceAsyncClient.getBlobContainerAsyncClient(BLOB_CONTAINER_NAME).create();
+                } else {
+                    return Mono.empty();
+                }
+            })
+            .block();
     }
 
     public static Builder msCommonWebClientBuilder() {
@@ -105,33 +111,10 @@ public class AzureBlobBugDownloaderController {
         log.info("!!!!!!!!!!!!!!!!!!!!!!!!!!!!   end download of {}", targetFile);
     }
 
-    @GetMapping(path = "/trigger-generation-of-random-data-to-blobstore/{fileSizeInMb}")
-    public void triggerGenerationOfRandomDataToBlobStore(@PathVariable int fileSizeInMb) {
-        log.info("triggerGenerationOfRandomDataToBlobStore");
-        try {
-            byte[] bytes = new byte[fileSizeInMb * Constants.MB];
-            SecureRandom.getInstanceStrong().nextBytes(bytes);
-            try (ByteArrayInputStream inputStream = new ByteArrayInputStream(bytes);) {
-                var destination = "TestDownloadToAzureBlobStorage" + System.currentTimeMillis() + ".pdf";
-
-                var blobClientTarget = this.containerClient.getBlobClient(destination);
-
-                try (var outputStream = blobClientTarget.getBlockBlobClient().getBlobOutputStream(this.parallelTransferOptions, null, null, null, null)) {
-                    outputStream.write(inputStream.readAllBytes());
-                } catch (IOException e) {
-                    throw new IllegalStateException(e);
-                }
-                log.info("!!!!!!!!!!!!!!!!!!!!!!!!!!!!   end download of {}", destination);
-            }
-        } catch (Exception e) {
-            throw new IllegalStateException(e);
-        }
-    }
-
 
     @GetMapping(path = "/trigger-download-to-blob/{fileSizeInMb}")
     public void triggerDownloadToBlob(@PathVariable int fileSizeInMb) {
-        log.info("triggerDownloadToBlob");
+        log.info("triggerDownload");
 
         var flux = this.webClient
             .get()
@@ -141,61 +124,14 @@ public class AzureBlobBugDownloaderController {
 
         var destination = "TestDownloadToAzureBlobStorage" + System.currentTimeMillis() + ".pdf";
 
-        var blobClientTarget = this.containerClient.getBlobClient(destination);
+        var blobClientTarget = this.containerAsyncClient.getBlobAsyncClient(destination);
 
-        try (var outputStream = blobClientTarget.getBlockBlobClient().getBlobOutputStream(this.parallelTransferOptions, null, null, null, null)) {
-            DataBufferUtils.write(flux, outputStream)
-                .map(DataBufferUtils::release)
-                .blockLast(Duration.ofHours(22));
-            outputStream.flush();
-        } catch (IOException e) {
-            throw new IllegalStateException(e);
-        }
-
-        log.info("!!!!!!!!!!!!!!!!!!!!!!!!!!!!   end download of {}", destination);
-    }
-
-
-    /**
-     * https://stackoverflow.com/questions/76575117/can-not-transfer-more-than-250mb-with-databufferutils-write-to-azure-blob-storag/76580753#76580753
-     */
-    @GetMapping(path = "/trigger-download-to-blob-2/{fileSizeInMb}")
-    public void triggerDownloadToBlob2(@PathVariable int fileSizeInMb) {
-        log.info("triggerDownloadToBlob2");
-        StopWatch stopWatch = new StopWatch();
-        stopWatch.start();
-
-        var flux = this.webClient
-            .get()
-            .uri("/serve-file/" + fileSizeInMb)
-            .accept(MediaType.APPLICATION_OCTET_STREAM)
-            .exchangeToFlux(clientResponse -> clientResponse.body(BodyExtractors.toDataBuffers()));
-
-        var destination = "TestDownloadToAzureBlobStorage" + System.currentTimeMillis() + ".pdf";
-
-        var blobClientTarget = this.containerClient.getBlobClient(destination);
-
-        try (var outputStream = blobClientTarget.getBlockBlobClient().getBlobOutputStream()) {
-            DataBufferUtils.write(flux, outputStream)
-                .doOnError(throwable -> {
-                    // Handle the error gracefully
-                    stopWatch.stop();
-                    System.out.println("Error occurred during data streaming: " + throwable.getMessage());
-                })
-                .doFinally(signal -> {
-                    try {
-                        outputStream.flush();
-                        outputStream.close();
-                        stopWatch.stop();
-                        System.out.println("File uploaded successfully " + stopWatch.getTotalTimeMillis() + "ms");
-                    } catch (IOException e) {
-                        System.out.println("Error occurred while closing the output stream: " + e.getMessage());
-                    }
-                })
-                .blockLast(Duration.ofSeconds(111111111));
-        } catch (IOException e) {
-            throw new IllegalStateException(e);
-        }
+        blobClientTarget.upload(flux.map(dataBuffer -> {
+            ByteBuffer buffer = ByteBuffer.allocate(dataBuffer.readableByteCount());
+            dataBuffer.toByteBuffer(buffer);
+            DataBufferUtils.release(dataBuffer);
+            return buffer;
+        }), this.parallelTransferOptions).block();
 
         log.info("!!!!!!!!!!!!!!!!!!!!!!!!!!!!   end download of {}", destination);
     }
