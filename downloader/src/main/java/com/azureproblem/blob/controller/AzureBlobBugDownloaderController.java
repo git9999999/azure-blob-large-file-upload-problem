@@ -2,7 +2,9 @@ package com.azureproblem.blob.controller;
 
 import static org.apache.commons.lang3.ObjectUtils.isEmpty;
 
+import com.azure.storage.blob.BlobContainerAsyncClient;
 import com.azure.storage.blob.BlobContainerClient;
+import com.azure.storage.blob.BlobServiceAsyncClient;
 import com.azure.storage.blob.BlobServiceClient;
 import com.azure.storage.blob.BlobServiceClientBuilder;
 import com.azure.storage.blob.models.ParallelTransferOptions;
@@ -11,6 +13,7 @@ import java.io.ByteArrayInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.SecureRandom;
@@ -48,11 +51,14 @@ public class AzureBlobBugDownloaderController {
     private final WebClient webClient;
 
     private final ParallelTransferOptions parallelTransferOptions;
+    private final BlobContainerAsyncClient blobContainerAsyncClient;
 
 
     public AzureBlobBugDownloaderController(BlobServiceClientBuilder blobServiceClientBuilder) {
         this.blobServiceClient = blobServiceClientBuilder.buildClient();
         this.containerClient = this.blobServiceClient.getBlobContainerClient(BLOB_CONTAINER_NAME);
+        BlobServiceAsyncClient blobServiceAsyncClient = blobServiceClientBuilder.buildAsyncClient();
+        this.blobContainerAsyncClient = blobServiceAsyncClient.getBlobContainerAsyncClient(BLOB_CONTAINER_NAME);
         log.debug("technicalAppIp '{}' technicalAppPort '{}'", "8545", "8545");
         this.webClient = msCommonWebClientBuilder().baseUrl(createUrl("client", "localhost", "8545")).build();
 
@@ -151,6 +157,31 @@ public class AzureBlobBugDownloaderController {
         } catch (IOException e) {
             throw new IllegalStateException(e);
         }
+
+        log.info("!!!!!!!!!!!!!!!!!!!!!!!!!!!!   end download of {}", destination);
+    }
+
+
+    @GetMapping(path = "/trigger-download-to-blob-working-ok/{fileSizeInMb}")
+    public void triggerDownloadToBlobWorkingOk(@PathVariable int fileSizeInMb) {
+        log.info("triggerDownloadToBlob");
+
+        var flux = this.webClient
+            .get()
+            .uri("/serve-file/" + fileSizeInMb)
+            .accept(MediaType.APPLICATION_OCTET_STREAM)
+            .exchangeToFlux(clientResponse -> clientResponse.body(BodyExtractors.toDataBuffers()));
+
+        var destination = "TestDownloadToAzureBlobStorage" + System.currentTimeMillis() + ".pdf";
+
+        var blobClientTarget = this.blobContainerAsyncClient.getBlobAsyncClient(destination);
+
+        blobClientTarget.upload(flux.map(dataBuffer -> {
+            ByteBuffer buffer = ByteBuffer.allocate(dataBuffer.readableByteCount());
+            dataBuffer.toByteBuffer(buffer);
+            DataBufferUtils.release(dataBuffer);
+            return buffer;
+        }), this.parallelTransferOptions).block();
 
         log.info("!!!!!!!!!!!!!!!!!!!!!!!!!!!!   end download of {}", destination);
     }

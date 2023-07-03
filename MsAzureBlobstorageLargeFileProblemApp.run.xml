@@ -3,7 +3,7 @@
     <module name="downloader" />
     <option name="SHORTEN_COMMAND_LINE" value="ARGS_FILE" />
     <option name="SPRING_BOOT_MAIN_CLASS" value="com.azureproblem.blob.application.MsAzureBlobstorageLargeFileProblemApp" />
-    <option name="VM_PARAMETERS" value="-Xmx5G -XX:+CrashOnOutOfMemoryError" />
+    <option name="VM_PARAMETERS" value="-Xmx500M -XX:+CrashOnOutOfMemoryError" />
     <extension name="coverage">
       <pattern>
         <option name="PATTERN" value="com.azureproblem.blob.application.*" />
